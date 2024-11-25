@@ -40,16 +40,38 @@ class Plants(Resource):
 
 api.add_resource(Plants, '/plants')
 
-
 class PlantByID(Resource):
-
     def get(self, id):
-        plant = Plant.query.filter_by(id=id).first().to_dict()
-        return make_response(jsonify(plant), 200)
+        try:
+            plant = Plant.query.get_or_404(id)
+            return plant.to_dict(), 200
+        except Exception as e:
+            return {"error": str(e)}, 404
+
+    def patch(self, id):
+        try:
+            plant = Plant.query.get_or_404(id)
+            data = request.get_json()
+            for attr in data:
+                setattr(plant, attr, data[attr])
+            db.session.commit()
+            return plant.to_dict(), 202
+        except ValueError as e:
+            return {"error": str(e)}, 400
+        except Exception as e:
+            return {"error": "Plant not found"}, 404
+
+    def delete(self, id):
+        try:
+            plant = Plant.query.get_or_404(id)
+            db.session.delete(plant)
+            db.session.commit()
+            return '', 204
+        except Exception as e:
+            return {"error": "Plant not found"}, 404
 
 
 api.add_resource(PlantByID, '/plants/<int:id>')
-
 
 if __name__ == '__main__':
     app.run(port=5555, debug=True)
